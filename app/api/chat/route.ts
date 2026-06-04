@@ -44,18 +44,44 @@ export async function POST(req: NextRequest) {
   // Get the FastAPI backend URL from environment variable
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
+  // Get endpoint type from query parameter
+  const searchParams = req.nextUrl.searchParams;
+  const endpointType = searchParams.get("type") || "default";
+  const role = searchParams.get("role") || "user";
+
+  // Choose backend route based on type and role
+  let backendRoute: string;
+
+  if (endpointType === "semantic") {
+    // Semantic routes differentiate by role
+    backendRoute = role === "analyst"
+        ? "/api/chat/semantic/analyst/stream"
+        : "/api/chat/semantic/user/stream";
+  } else {
+    // Default DDL route
+    backendRoute = "/api/chat/ddl/stream";
+  }
+
+  // Get the latest user message as the customer query
+  const latestUserMessage = messages.filter(m => m.role === "user").pop();
+
+  // Format request body for backend
+  const requestBody = {
+    cust_id: 1,
+    customer_query: latestUserMessage?.content || ""
+  };
+
   // Add timeout
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
   try {
-    // Forward the request to your FastAPI backend
-    const response = await fetch(`${backendUrl}/api/chat/stream`, {
+    const response = await fetch(`${backendUrl}${backendRoute}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
     });
 

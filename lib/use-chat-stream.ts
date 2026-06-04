@@ -11,8 +11,10 @@ export interface Message {
 }
 
 interface UseChatStreamOptions {
-  /** Endpoint that returns a streamed text/event response. Defaults to /api/chat. */
-  endpoint?: string;
+    /** Endpoint that returns a streamed text/event response. Defaults to /api/chat. */
+    endpoint?: string;
+    /** Role type for semantic endpoints: 'user' or 'analyst' */
+    role?: "user" | "analyst";
 }
 
 function uid() {
@@ -33,7 +35,7 @@ function uid() {
  * body as a ReadableStream, decoding each chunk and appending it to the
  * in-progress assistant message so the UI updates token-by-token.
  */
-export function useChatStream({ endpoint = "/api/chat" }: UseChatStreamOptions = {}) {
+export function useChatStream({ endpoint = "/api/chat", role = "user" }: UseChatStreamOptions = {}) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isStreaming, setIsStreaming] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -73,7 +75,12 @@ export function useChatStream({ endpoint = "/api/chat" }: UseChatStreamOptions =
             let hasError = false;
 
             try {
-                const res = await fetch(endpoint, {
+                // Append role parameter to endpoint if not already present
+                const fetchUrl = endpoint.includes("?")
+                    ? `${endpoint}&role=${role}`
+                    : `${endpoint}?role=${role}`;
+
+                const res = await fetch(fetchUrl, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
@@ -179,7 +186,7 @@ export function useChatStream({ endpoint = "/api/chat" }: UseChatStreamOptions =
                 setIsStreaming(false);
             }
         },
-        [endpoint, isStreaming, messages]
+        [endpoint, isStreaming, messages, role]
     );
 
     const clear = useCallback(() => {

@@ -5,7 +5,6 @@ import { Menu, ArrowUp, Square, Trash2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Drawer,
   DrawerClose,
@@ -20,7 +19,11 @@ import { useChatStream, type Message } from "@/lib/use-chat-stream";
 import { cn } from "@/lib/utils";
 
 export default function ChatPage() {
-  const { messages, isStreaming, error, send, stop, clear } = useChatStream();
+  const [selectedRole, setSelectedRole] = useState<"user" | "analyst">("user");
+  const { messages, isStreaming, error, send, stop, clear } = useChatStream({
+    endpoint: "/api/chat?type=semantic",
+    role: selectedRole
+  });
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -39,110 +42,138 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="mx-auto flex h-dvh container flex-col px-4">
-      {/* Header */}
-      <header className="flex items-center justify-between border-b py-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <h1 className="font-display text-xl tracking-tight">Streamline</h1>
-        </div>
+      <div className="mx-auto flex h-dvh max-h-dvh container flex-col px-4 overflow-hidden">
+        {/* Header */}
+        <header className="flex shrink-0 items-center justify-between border-b py-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h1 className="font-display text-xl tracking-tight">Streamline</h1>
+          </div>
 
-        <Drawer direction="right">
-          <DrawerTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Open menu">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </DrawerTrigger>
-          <DrawerContent className="ml-auto h-full w-80 rounded-none">
-            <DrawerHeader className="text-left">
-              <DrawerTitle className="font-display text-lg">Settings</DrawerTitle>
-              <DrawerDescription>
-                Session controls and connection details.
-              </DrawerDescription>
-            </DrawerHeader>
-
-            <div className="space-y-4 px-4 text-sm">
-              <div className="rounded-lg border bg-muted/40 p-3">
-                <p className="text-muted-foreground">Endpoint</p>
-                <p className="font-mono text-xs">POST /api/chat</p>
-              </div>
-              <div className="rounded-lg border bg-muted/40 p-3">
-                <p className="text-muted-foreground">Messages in context</p>
-                <p className="font-mono text-xs">{messages.length}</p>
-              </div>
-              <div className="rounded-lg border bg-muted/40 p-3">
-                <p className="text-muted-foreground">Transport</p>
-                <p className="font-mono text-xs">Chunked text stream</p>
-              </div>
+          <div className="flex items-center gap-2">
+            {/* Role Selector */}
+            <div className="flex rounded-lg border bg-muted/40 p-1">
+              <Button
+                  variant={selectedRole === "user" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setSelectedRole("user")}
+                  disabled={isStreaming}
+                  className="h-8"
+              >
+                User
+              </Button>
+              <Button
+                  variant={selectedRole === "analyst" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setSelectedRole("analyst")}
+                  disabled={isStreaming}
+                  className="h-8"
+              >
+                Analyst
+              </Button>
             </div>
 
-            <DrawerFooter>
-              <Button
-                variant="outline"
-                onClick={clear}
-                disabled={messages.length === 0}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Clear conversation
-              </Button>
-              <DrawerClose asChild>
-                <Button variant="ghost">Close</Button>
-              </DrawerClose>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      </header>
+            <Drawer direction="right">
+              <DrawerTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Open menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className="ml-auto h-full w-80 rounded-none">
+                <DrawerHeader className="text-left">
+                  <DrawerTitle className="font-display text-lg">Settings</DrawerTitle>
+                  <DrawerDescription>
+                    Session controls and connection details.
+                  </DrawerDescription>
+                </DrawerHeader>
 
-      {/* Scrolling output */}
-      <ScrollArea className="flex-1">
-        <div ref={scrollRef} className="flex h-full flex-col gap-4 py-6">
-          {messages.length === 0 ? (
-            <EmptyState />
-          ) : (
-            messages.map((m) => <Bubble key={m.id} message={m} />)
-          )}
-          {error && (
-            <p className="text-center text-xs text-destructive">{error}</p>
-          )}
-        </div>
-      </ScrollArea>
+                <div className="space-y-4 px-4 text-sm">
+                  <div className="rounded-lg border bg-muted/40 p-3">
+                    <p className="text-muted-foreground">Endpoint</p>
+                    <p className="font-mono text-xs">POST /api/chat</p>
+                  </div>
+                  <div className="rounded-lg border bg-muted/40 p-3">
+                    <p className="text-muted-foreground">Role</p>
+                    <p className="font-mono text-xs">{selectedRole}</p>
+                  </div>
+                  <div className="rounded-lg border bg-muted/40 p-3">
+                    <p className="text-muted-foreground">Messages in context</p>
+                    <p className="font-mono text-xs">{messages.length}</p>
+                  </div>
+                  <div className="rounded-lg border bg-muted/40 p-3">
+                    <p className="text-muted-foreground">Transport</p>
+                    <p className="font-mono text-xs">Chunked text stream</p>
+                  </div>
+                </div>
 
-      {/* Input */}
-      <div className="border-t py-4">
-        <div className="flex items-end gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                submit();
-              }
-            }}
-            placeholder="Send a message…"
-            className="h-11"
-            disabled={isStreaming}
-          />
-          {isStreaming ? (
-            <Button size="icon" className="h-11 w-11 shrink-0" onClick={stop}>
-              <Square className="h-4 w-4" />
-            </Button>
-          ) : (
-            <Button
-              size="icon"
-              className="h-11 w-11 shrink-0"
-              onClick={submit}
-              disabled={!input.trim()}
-            >
-              <ArrowUp className="h-5 w-5" />
-            </Button>
-          )}
+                <DrawerFooter>
+                  <Button
+                      variant="outline"
+                      onClick={clear}
+                      disabled={messages.length === 0}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear conversation
+                  </Button>
+                  <DrawerClose asChild>
+                    <Button variant="ghost">Close</Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+          </div>
+        </header>
+
+        {/* Scrolling output */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div ref={scrollRef} className="flex flex-col gap-4 py-6">
+            {messages.length === 0 ? (
+                <EmptyState />
+            ) : (
+                messages.map((m) => <Bubble key={m.id} message={m} />)
+            )}
+            {error && (
+                <p className="text-center text-xs text-destructive">{error}</p>
+            )}
+          </div>
         </div>
-        <p className="mt-2 text-center text-[12px] text-muted-foreground">
-          Enter to send · Shift+Enter for a newline
-        </p>
+
+        {/* Input */}
+        <div className="shrink-0 border-t py-4">
+          <div className="flex items-end gap-2">
+            <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    submit();
+                  }
+                }}
+                placeholder="Send a message…"
+                className="h-11"
+                disabled={isStreaming}
+            />
+            {isStreaming ? (
+                <Button size="icon" className="h-11 w-11 shrink-0" onClick={stop}>
+                  <Square className="h-4 w-4" />
+                </Button>
+            ) : (
+                <Button
+                    size="icon"
+                    className="h-11 w-11 shrink-0"
+                    onClick={submit}
+                    disabled={!input.trim()}
+                >
+                  <ArrowUp className="h-5 w-5" />
+                </Button>
+            )}
+          </div>
+          <p className="mt-2 text-center text-[12px] text-muted-foreground">
+            Enter to send · Shift+Enter for a newline
+          </p>
+        </div>
       </div>
-    </div>
   );
 }
 
