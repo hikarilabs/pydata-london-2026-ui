@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
   // Get endpoint type from query parameter
   const searchParams = req.nextUrl.searchParams;
-  const endpointType = searchParams.get("type") || "default";
+  const endpointType = searchParams.get("type") || "semantic";
   const role = searchParams.get("role") || "user";
 
   // Choose backend route based on type and role

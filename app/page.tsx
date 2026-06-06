@@ -20,8 +20,9 @@ import { cn } from "@/lib/utils";
 
 export default function ChatPage() {
   const [selectedRole, setSelectedRole] = useState<"user" | "analyst">("user");
+  const [selectedEndpoint, setSelectedEndpoint] = useState<"semantic" | "ddl">("semantic");
   const { messages, isStreaming, error, send, stop, clear } = useChatStream({
-    endpoint: "/api/chat?type=semantic",
+    endpoint: `/api/chat?type=${selectedEndpoint}`,
     role: selectedRole
   });
   const [input, setInput] = useState("");
@@ -51,27 +52,51 @@ export default function ChatPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Role Selector */}
+            {/* Endpoint Type Selector */}
             <div className="flex rounded-lg border bg-muted/40 p-1">
               <Button
-                  variant={selectedRole === "user" ? "secondary" : "ghost"}
+                  variant={selectedEndpoint === "semantic" ? "secondary" : "ghost"}
                   size="sm"
-                  onClick={() => setSelectedRole("user")}
+                  onClick={() => setSelectedEndpoint("semantic")}
                   disabled={isStreaming}
                   className="h-8"
               >
-                User
+                Semantic
               </Button>
               <Button
-                  variant={selectedRole === "analyst" ? "secondary" : "ghost"}
+                  variant={selectedEndpoint === "ddl" ? "secondary" : "ghost"}
                   size="sm"
-                  onClick={() => setSelectedRole("analyst")}
+                  onClick={() => setSelectedEndpoint("ddl")}
                   disabled={isStreaming}
                   className="h-8"
               >
-                Analyst
+                DDL
               </Button>
             </div>
+
+            {/* Role Selector - only show for semantic endpoint */}
+            {selectedEndpoint === "semantic" && (
+                <div className="flex rounded-lg border bg-muted/40 p-1">
+                  <Button
+                      variant={selectedRole === "user" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setSelectedRole("user")}
+                      disabled={isStreaming}
+                      className="h-8"
+                  >
+                    User
+                  </Button>
+                  <Button
+                      variant={selectedRole === "analyst" ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setSelectedRole("analyst")}
+                      disabled={isStreaming}
+                      className="h-8"
+                  >
+                    Analyst
+                  </Button>
+                </div>
+            )}
 
             <Drawer direction="right">
               <DrawerTrigger asChild>
@@ -90,12 +115,18 @@ export default function ChatPage() {
                 <div className="space-y-4 px-4 text-sm">
                   <div className="rounded-lg border bg-muted/40 p-3">
                     <p className="text-muted-foreground">Endpoint</p>
-                    <p className="font-mono text-xs">POST /api/chat</p>
+                    <p className="font-mono text-xs">POST /api/chat?type={selectedEndpoint}</p>
                   </div>
                   <div className="rounded-lg border bg-muted/40 p-3">
-                    <p className="text-muted-foreground">Role</p>
-                    <p className="font-mono text-xs">{selectedRole}</p>
+                    <p className="text-muted-foreground">Type</p>
+                    <p className="font-mono text-xs">{selectedEndpoint}</p>
                   </div>
+                  {selectedEndpoint === "semantic" && (
+                      <div className="rounded-lg border bg-muted/40 p-3">
+                        <p className="text-muted-foreground">Role</p>
+                        <p className="font-mono text-xs">{selectedRole}</p>
+                      </div>
+                  )}
                   <div className="rounded-lg border bg-muted/40 p-3">
                     <p className="text-muted-foreground">Messages in context</p>
                     <p className="font-mono text-xs">{messages.length}</p>
